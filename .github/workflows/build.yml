@@ -10,100 +10,54 @@ on:
     types:
       - published
 
-env:
-  IMAGE_NAME: ghcr.io/gsmlg-dev/antigravity-claude-proxy
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 permissions:
   contents: read
   packages: write
-  attestations: write
-  artifact-metadata: write
-  id-token: write
-
-concurrency:
-  group: docker-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   docker:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout packaging repo
-        uses: actions/checkout@v6
-
-      - name: Checkout upstream app source
-        uses: actions/checkout@v6
-        with:
-          repository: badrisnarayanan/antigravity-claude-proxy
-          ref: main
-          path: upstream
-          fetch-depth: 1
-
-      - name: Apply local overlay
-        run: node scripts/apply-overlay.mjs upstream
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Derive release tag
-        id: vars
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "release_tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "release_tag=" >> "$GITHUB_OUTPUT"
-          fi
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
+      - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: ghcr.io/gsmlg-ci/antigravity-claude-proxy
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event_name == 'release' }}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=tag
-            type=raw,value=${{ steps.vars.outputs.release_tag }},enable=${{ steps.vars.outputs.release_tag != '' }}
-            type=sha,format=short,prefix=sha-
-          labels: |
-            org.opencontainers.image.title=antigravity-claude-proxy
-            org.opencontainers.image.description=Anthropic-compatible proxy server for Antigravity Cloud Code
-            org.opencontainers.image.vendor=gsmlg-ci
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
 
-      - name: Build and push image
-        id: build
-        uses: docker/build-push-action@v7
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
-          context: ./upstream
+          context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
           push: true
+          platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: mode=max
-          sbom: true
           build-args: |
             BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             VERSION=${{ steps.meta.outputs.version }}
             VCS_REF=${{ github.sha }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-name: ${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

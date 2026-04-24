@@ -1,50 +1,33 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24-alpine AS base
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
-ENV NODE_ENV=production \
-    HOST=0.0.0.0 \
-    PORT=8080
-
-FROM base AS build-deps
-
-ENV NODE_ENV=development
-
-RUN apk add --no-cache --virtual .build-deps \
-    g++ \
-    make \
-    python3
+RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --ignore-scripts
+    npm ci
 
-FROM build-deps AS build
+FROM deps AS build
 
-COPY tailwind.config.js postcss.config.js ./
-COPY bin ./bin
-COPY public ./public
-COPY src ./src
+COPY . .
 
 RUN npm run build:css
 
-FROM base AS prod-deps
+FROM node:24-alpine AS prod-deps
 
-RUN apk add --no-cache --virtual .build-deps \
-    g++ \
-    make \
-    python3
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --ignore-scripts && \
-    npm rebuild better-sqlite3
-
-RUN apk del .build-deps
+    npm ci --omit=dev && \
+    npm cache clean --force
 
 FROM node:24-alpine AS runtime
 
@@ -53,7 +36,7 @@ ARG VERSION=dev
 ARG VCS_REF
 
 LABEL org.opencontainers.image.title="antigravity-claude-proxy" \
-      org.opencontainers.image.description="Anthropic-compatible proxy server for Antigravity Cloud Code" \
+      org.opencontainers.image.description="Dockerized Anthropic-compatible proxy for Antigravity Cloud Code" \
       org.opencontainers.image.url="https://github.com/gsmlg-ci/antigravity-claude-proxy" \
       org.opencontainers.image.source="https://github.com/gsmlg-ci/antigravity-claude-proxy" \
       org.opencontainers.image.documentation="https://github.com/gsmlg-ci/antigravity-claude-proxy#readme" \
@@ -62,34 +45,37 @@ LABEL org.opencontainers.image.title="antigravity-claude-proxy" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}"
 
-WORKDIR /app
-
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=8080
+    PORT=8080 \
+    HOME=/home/node
+
+WORKDIR /app
 
 RUN apk add --no-cache tini && \
-    mkdir -p /home/node/.antigravity-claude-proxy && \
+    mkdir -p /home/node/.config/antigravity-proxy /home/node/.antigravity-claude-proxy && \
     chown -R node:node /app /home/node
 
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=build /app/public ./public
-COPY package.json package-lock.json ./
-COPY bin ./bin
-COPY src ./src
+COPY --chown=node:node --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=node:node --from=build /app/public ./public
+COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node bin ./bin
+COPY --chown=node:node src ./src
+COPY --chown=node:node LICENSE ./LICENSE
 
 RUN chmod +x /app/bin/cli.js && \
     ln -sf /app/bin/cli.js /usr/local/bin/antigravity-claude-proxy && \
     ln -sf /app/bin/cli.js /usr/local/bin/acc
 
-VOLUME ["/home/node/.antigravity-claude-proxy"]
+VOLUME ["/home/node/.config/antigravity-proxy", "/home/node/.antigravity-claude-proxy"]
 
 USER node
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:8080/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:8080/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["npm", "start"]
+

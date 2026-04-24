@@ -1,6 +1,6 @@
 services:
   antigravity-claude-proxy:
-    image: ghcr.io/gsmlg-dev/antigravity-claude-proxy:latest
+    image: ghcr.io/gsmlg-ci/antigravity-claude-proxy:latest
     container_name: antigravity-claude-proxy
     restart: unless-stopped
     ports:
@@ -9,9 +9,14 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 8080
+      API_KEY: change-me
+      GOOGLE_OAUTH_CLIENT_ID: your-client-id
+      GOOGLE_OAUTH_CLIENT_SECRET: your-client-secret
       MODEL_ALIASES: >-
         {"gemini-3-pro":"gemini-3.1-pro-high[1m]","haiku":"claude-sonnet-4-6-thinking","my-opus":"claude-opus-4-6-thinking","fast":"gemini-3-flash[1m]"}
+      AI_CREDIT_OVERAGES: default
     volumes:
+      - antigravity-proxy-config:/home/node/.config/antigravity-proxy
       - antigravity-proxy-data:/home/node/.antigravity-claude-proxy
     healthcheck:
       test:
@@ -25,4 +30,5 @@ services:
       start_period: 20s
 
 volumes:
+  antigravity-proxy-config:
   antigravity-proxy-data:

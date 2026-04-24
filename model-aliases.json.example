@@ -4,3 +4,4 @@
   "my-opus": "claude-opus-4-6-thinking",
   "fast": "gemini-3-flash[1m]"
 }
+
