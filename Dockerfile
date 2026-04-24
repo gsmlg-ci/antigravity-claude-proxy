@@ -82,6 +82,8 @@ RUN chmod +x /app/bin/cli.js && \
     ln -sf /app/bin/cli.js /usr/local/bin/antigravity-claude-proxy && \
     ln -sf /app/bin/cli.js /usr/local/bin/acc
 
+VOLUME ["/home/node/.antigravity-claude-proxy"]
+
 USER node
 
 EXPOSE 6580
