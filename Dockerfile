@@ -42,8 +42,7 @@ COPY package.json package-lock.json ./
 
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --ignore-scripts && \
-    npm rebuild better-sqlite3 && \
-    npm cache clean --force
+    npm rebuild better-sqlite3
 
 RUN apk del .build-deps
 
