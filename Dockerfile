@@ -10,6 +10,8 @@ ENV NODE_ENV=production \
 
 FROM base AS build-deps
 
+ENV NODE_ENV=development
+
 RUN apk add --no-cache --virtual .build-deps \
     g++ \
     make \
