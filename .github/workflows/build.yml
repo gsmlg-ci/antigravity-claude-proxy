@@ -5,13 +5,14 @@ on:
     branches:
       - main
     tags:
+      - "v*"
       - "*"
   release:
     types:
       - published
 
 env:
-  IMAGE_NAME: ghcr.io/gsmlg-dev/antigravity-claude-proxy
+  IMAGE_NAME: ghcr.io/gsmlg-ci/antigravity-claude-proxy
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 permissions:
@@ -30,21 +31,48 @@ jobs:
 
     steps:
       - name: Checkout packaging repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Checkout upstream app source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: badrisnarayanan/antigravity-claude-proxy
           ref: main
           path: upstream
           fetch-depth: 1
 
+      # Copy our custom source files into the upstream tree and patch server.js
+      - name: Overlay custom source files
+        run: |
+          set -euo pipefail
+
+          # 1. Copy the model-aliases module
+          cp -v src/model-aliases.js upstream/src/model-aliases.js
+
+          # 2. Patch upstream/src/server.js to integrate model aliases
+          SERVER=upstream/src/server.js
+
+          # 2a. Add import after the last existing import line
+          sed -i "/^import usageStats/a\\
+          import { modelAliasMiddleware, augmentModelsResponse } from './model-aliases.js';" "$SERVER"
+
+          # 2b. Mount middleware right after express.json()
+          sed -i "/app\.use(express\.json/a\\
+          app.use(modelAliasMiddleware);" "$SERVER"
+
+          # 2c. Wrap /v1/models response with alias augmentation
+          sed -i 's/res\.json(models);/res.json(augmentModelsResponse(models));/' "$SERVER"
+
+          echo "--- Patched server.js (first 30 lines) ---"
+          head -30 "$SERVER"
+          echo "--- grep model-aliases ---"
+          grep -n 'model-aliases\|modelAlias\|augmentModels' "$SERVER" || true
+
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v3
 
       - name: Derive release tag
         id: vars
@@ -57,15 +85,15 @@ jobs:
           fi
 
       - name: Log in to GHCR
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
@@ -80,7 +108,7 @@ jobs:
 
       - name: Build and push image
         id: build
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v6
         with:
           context: ./upstream
           file: ./Dockerfile
@@ -98,7 +126,7 @@ jobs:
             VCS_REF=${{ github.sha }}
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}

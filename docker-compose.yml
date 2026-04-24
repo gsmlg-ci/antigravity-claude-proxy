@@ -1,6 +1,6 @@
 services:
   antigravity-claude-proxy:
-    image: ghcr.io/gsmlg-dev/antigravity-claude-proxy:latest
+    image: ghcr.io/gsmlg-ci/antigravity-claude-proxy:latest
     container_name: antigravity-claude-proxy
     restart: unless-stopped
     ports:
@@ -9,6 +9,16 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 6580
+      # ── Model Aliases ────────────────────────────────────────────
+      # Map short / custom names to real Antigravity model IDs.
+      # The proxy resolves aliases transparently in all /v1/* endpoints.
+      MODEL_ALIASES: >-
+        {
+          "gemini-pro": "gemini-3.1-pro-high[1m]",
+          "haiku": "claude-sonnet-4-6-thinking",
+          "my-opus": "claude-opus-4-6-thinking",
+          "fast": "gemini-3-flash[1m]"
+        }
     volumes:
       - antigravity-proxy-data:/home/node/.antigravity-claude-proxy
     healthcheck:
