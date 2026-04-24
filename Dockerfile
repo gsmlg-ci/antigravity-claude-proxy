@@ -2,13 +2,15 @@
 
 FROM node:24-alpine AS deps
 
+ARG TARGETPLATFORM
+
 WORKDIR /app
 
 RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=npm-${TARGETPLATFORM},target=/root/.npm \
     npm ci
 
 FROM deps AS build
@@ -19,13 +21,15 @@ RUN npm run build:css
 
 FROM node:24-alpine AS prod-deps
 
+ARG TARGETPLATFORM
+
 WORKDIR /app
 
 RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=npm-${TARGETPLATFORM},target=/root/.npm \
     npm ci --omit=dev && \
     npm cache clean --force
 
