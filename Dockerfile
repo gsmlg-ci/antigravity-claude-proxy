@@ -8,9 +8,7 @@ RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 
-RUN node --version && npm --version && \
-    npm ping && \
-    npm ci --ignore-scripts --loglevel verbose 2>&1 && \
+RUN npm ci --ignore-scripts && \
     npm rebuild better-sqlite3
 
 FROM deps AS build
