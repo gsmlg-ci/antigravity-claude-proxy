@@ -10,7 +10,7 @@ docker run -d \
   -p 8080:8080 \
   -e NODE_ENV=production \
   -v antigravity-proxy-data:/home/node/.antigravity-claude-proxy \
-  ghcr.io/gsmlg-ci/antigravity-claude-proxy:latest
+  ghcr.io/gsmlg-dev/antigravity-claude-proxy:latest
 ```
 
 The application listens on `0.0.0.0:8080` and stores runtime data in `/home/node/.antigravity-claude-proxy`.
