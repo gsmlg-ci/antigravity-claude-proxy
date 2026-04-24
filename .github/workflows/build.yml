@@ -12,6 +12,7 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/gsmlg-dev/antigravity-claude-proxy
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 permissions:
   contents: read
@@ -28,8 +29,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout packaging repo
         uses: actions/checkout@v5
+
+      - name: Checkout upstream app source
+        uses: actions/checkout@v5
+        with:
+          repository: badrisnarayanan/antigravity-claude-proxy
+          ref: main
+          path: upstream
+          fetch-depth: 1
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -73,7 +82,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./upstream
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
