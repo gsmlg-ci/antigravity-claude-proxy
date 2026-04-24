@@ -7,18 +7,18 @@
 ```bash
 docker run -d \
   --name antigravity-claude-proxy \
-  -p 8080:8080 \
+  -p 6580:6580 \
   -e NODE_ENV=production \
   -v antigravity-proxy-data:/home/node/.antigravity-claude-proxy \
   ghcr.io/gsmlg-dev/antigravity-claude-proxy:latest
 ```
 
-The application listens on `0.0.0.0:8080` and stores runtime data in `/home/node/.antigravity-claude-proxy`.
+The application listens on `0.0.0.0:6580` and stores runtime data in `/home/node/.antigravity-claude-proxy`.
 
 ### Health check
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:6580/health
 ```
 
 ### Run the bundled CLI
@@ -32,7 +32,7 @@ docker exec -it antigravity-claude-proxy antigravity-claude-proxy accounts list
 
 ```bash
 docker build -t antigravity-claude-proxy:local .
-docker run --rm -p 8080:8080 antigravity-claude-proxy:local
+docker run --rm -p 6580:6580 antigravity-claude-proxy:local
 ```
 
 ### Compose example

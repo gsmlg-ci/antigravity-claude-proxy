@@ -6,7 +6,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=8080
+    PORT=6580
 
 FROM base AS build-deps
 
@@ -65,7 +65,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=8080
+    PORT=6580
 
 RUN apk add --no-cache tini && \
     mkdir -p /home/node/.antigravity-claude-proxy && \
@@ -83,10 +83,10 @@ RUN chmod +x /app/bin/cli.js && \
 
 USER node
 
-EXPOSE 8080
+EXPOSE 6580
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:8080/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:6580/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["npm", "start"]
