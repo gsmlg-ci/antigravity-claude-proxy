@@ -1,8 +1,6 @@
 {
-  "gemini-pro": "gemini-3.1-pro-high[1m]",
+  "gemini-3-pro": "gemini-3.1-pro-high[1m]",
   "haiku": "claude-sonnet-4-6-thinking",
   "my-opus": "claude-opus-4-6-thinking",
-  "fast": "gemini-3-flash[1m]",
-  "sonnet": "claude-sonnet-4-6",
-  "flash": "gemini-3-flash"
+  "fast": "gemini-3-flash[1m]"
 }
