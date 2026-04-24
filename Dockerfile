@@ -8,7 +8,9 @@ RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 
-RUN NODE_OPTIONS="--dns-result-order=ipv4first" npm ci --ignore-scripts && \
+RUN node --version && npm --version && \
+    npm ping && \
+    npm ci --ignore-scripts --loglevel verbose 2>&1 && \
     npm rebuild better-sqlite3
 
 FROM deps AS build
