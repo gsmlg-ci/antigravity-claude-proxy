@@ -15,6 +15,12 @@ docker run -d \
 
 The application listens on `0.0.0.0:6580` and stores runtime data in `/home/node/.antigravity-claude-proxy`.
 
+The image declares this path as a Docker volume, so account state, tokens, and local proxy data survive container replacement when you mount it:
+
+```bash
+-v antigravity-proxy-data:/home/node/.antigravity-claude-proxy
+```
+
 ### Health check
 
 ```bash
@@ -32,7 +38,9 @@ docker exec -it antigravity-claude-proxy antigravity-claude-proxy accounts list
 
 ```bash
 docker build -t antigravity-claude-proxy:local .
-docker run --rm -p 6580:6580 antigravity-claude-proxy:local
+docker run --rm -p 6580:6580 \
+  -v antigravity-proxy-data:/home/node/.antigravity-claude-proxy \
+  antigravity-claude-proxy:local
 ```
 
 ### Compose example
