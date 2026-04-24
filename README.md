@@ -11,7 +11,7 @@ docker run -d \
   -e NODE_ENV=production \
   -e MODEL_ALIASES='{"haiku":"claude-sonnet-4-6-thinking","fast":"gemini-3-flash[1m]"}' \
   -v antigravity-proxy-data:/home/node/.antigravity-claude-proxy \
-  ghcr.io/gsmlg-ci/antigravity-claude-proxy:latest
+  ghcr.io/gsmlg-dev/antigravity-claude-proxy:latest
 ```
 
 The application listens on `0.0.0.0:8080` and stores runtime data in `/home/node/.antigravity-claude-proxy`.

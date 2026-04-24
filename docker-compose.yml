@@ -1,6 +1,6 @@
 services:
   antigravity-claude-proxy:
-    image: ghcr.io/gsmlg-ci/antigravity-claude-proxy:latest
+    image: ghcr.io/gsmlg-dev/antigravity-claude-proxy:latest
     container_name: antigravity-claude-proxy
     restart: unless-stopped
     ports:
